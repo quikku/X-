@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>X炎上回避ゲーム</title>
+    <title>X炎上回避ゲーム（再構築版）</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -29,7 +29,7 @@
             align-items: center;
             margin-bottom: 20px;
         }
-        .score {
+        .followers {
             font-size: 18px;
         }
         .tweet {
@@ -71,7 +71,7 @@
             font-weight: bold;
         }
         #restart-button {
-            display: block;
+            display: none;
             margin: 20px auto 0;
         }
         #message {
@@ -85,6 +85,16 @@
             border-radius: 20px;
             font-weight: bold;
             display: none;
+            z-index: 1000;
+        }
+        #kuso-reply {
+            background-color: #22303c;
+            border-radius: 15px;
+            padding: 15px;
+            margin-top: 20px;
+            font-style: italic;
+            color: #e0245e;
+            display: none;
         }
     </style>
 </head>
@@ -92,9 +102,9 @@
     <div id="game-container">
         <div class="header">
             <h1>X炎上回避ゲーム</h1>
-            <div class="score">
-                <div>フォロワー数: <span id="followers">100</span></div>
-                <div>最高スコア: <span id="high-score">0</span></div>
+            <div class="followers">
+                <div>フォロワー: <span id="follower-count">100</span></div>
+                <div>最高フォロワー数: <span id="high-score">100</span></div>
             </div>
         </div>
         <div class="tweet">
@@ -106,70 +116,183 @@
             <button id="avoid-button">回避する</button>
         </div>
         <div id="result"></div>
-        <button id="restart-button" style="display: none;">ゲームを再開する</button>
+        <div id="kuso-reply"></div>
+        <button id="restart-button">ゲームを再開する</button>
     </div>
     <div id="message"></div>
 
     <script>
     const tweets = [
-    { text: "現代人は鈍感すぎる。昔のように体罰も必要だ", flameProbability: 0.83 },
-    { text: "駅前のトイレ、臭すぎ", flameProbability: 0.12 },
-    { text: "政治家の不祥事、もう許せない！", flameProbability: 0.47 },
-    { text: "最近の若者は根性がない", flameProbability: 0.62 },
-    { text: "今日の朝ごはんは納豆ご飯", flameProbability: 0.03 },
-    { text: "電車でマスクしてない人多すぎ。みんな非常識", flameProbability: 0.71 },
-    { text: "ペットボトルのお茶、高すぎない？", flameProbability: 0.18 },
-    { text: "芸能人の不倫、別に個人の自由じゃない？", flameProbability: 0.58 },
-    { text: "気候変動は嘘。科学者の陰謀だ", flameProbability: 0.92 },
-    { text: "今日の夕焼けがきれい", flameProbability: 0.01 },
-    { text: "有名人の過去の失言を掘り起こして批判するの、やめるべき", flameProbability: 0.55 },
-    { text: "給食費の無償化、本当に必要？", flameProbability: 0.67 },
-    { text: "スマホ依存症の人多すぎ。もっと現実を見よう", flameProbability: 0.43 },
-    { text: "電車で化粧する人、正直引く", flameProbability: 0.59 },
-    { text: "今日のラーメン、美味しかった！", flameProbability: 0.02 },
-    { text: "外国人労働者の受け入れ、もっと規制すべき", flameProbability: 0.79 },
-    { text: "ジェンダーレス社会って、本当に必要？", flameProbability: 0.74 },
-    { text: "今日の富士山、綺麗だった", flameProbability: 0.01 },
-    { text: "子育ては女性の仕事。男は外で稼ぐべき", flameProbability: 0.88 },
-    { text: "電車の中で電話する人、迷惑だよね", flameProbability: 0.31 },
-    { text: "高齢ドライバーの免許返納、もっと厳しくすべき", flameProbability: 0.64 },
-    { text: "今日の夕食はカレーライス！", flameProbability: 0.02 },
-    { text: "TPPは日本の農業を破壊する", flameProbability: 0.53 },
-    { text: "SNSの影響で、若者のコミュニケーション能力が低下している", flameProbability: 0.45 },
-    { text: "今日の満月、本当に美しい", flameProbability: 0.01 },
-    { text: "死刑制度は必要。凶悪犯罪者に人権はない", flameProbability: 0.82 },
-    { text: "ワクチンは危険。自然免疫を信じるべき", flameProbability: 0.91 },
-    { text: "電車の優先席、若者が座りすぎ", flameProbability: 0.49 },
-    { text: "今日の朝日、心が洗われる", flameProbability: 0.01 },
-    { text: "男女平等って、逆差別じゃない？", flameProbability: 0.85 },
-    { text: "コンビニの弁当、最近値上がりしすぎ", flameProbability: 0.22 },
-    { text: "宗教の自由は制限すべき。過激思想の温床になる", flameProbability: 0.87 },
-    { text: "今日の星空、まるで天の川", flameProbability: 0.01 },
-    { text: "喫煙者の権利も守るべき。過度な規制はおかしい", flameProbability: 0.73 },
-    { text: "電車の遅延、もっと補償すべき", flameProbability: 0.28 },
-    { text: "今日の夕陽、海に沈む様子が魔法のよう", flameProbability: 0.01 },
-    { text: "移民政策は甘すぎる。もっと厳しくすべき", flameProbability: 0.81 },
-    { text: "スーパーのビニール袋、有料化は行き過ぎ", flameProbability: 0.52 },
-    { text: "今日の新緑、目に染みる美しさ", flameProbability: 0.01 },
-    { text: "SNSは若者の精神を蝕む。規制すべき", flameProbability: 0.76 },
-    { text: "電車のマナー、昔の方が良かった", flameProbability: 0.39 },
-    { text: "学校でのスマホ使用、完全に禁止すべき", flameProbability: 0.61 },
-    { text: "今日の桜、満開で綺麗", flameProbability: 0.01 },
-    { text: "選挙に行かない若者は国を良くする資格がない", flameProbability: 0.72 },
-    { text: "ベーシックインカム導入で貧困問題は解決する", flameProbability: 0.56 },
-    { text: "今日の雪景色、まるで絵画のよう", flameProbability: 0.01 },
-    { text: "外国人観光客のマナーが悪すぎる。規制すべき", flameProbability: 0.69 },
-    { text: "日本の教育システムは古すぎる。根本的な改革が必要", flameProbability: 0.41 },
-    { text: "今日の紅葉、息をのむほど美しい", flameProbability: 0.01 }
-];
+        { text: "現代人は鈍感すぎる。昔のように体罰も必要だ", flameProbability: 0.53, category: "社会批判" },
+        { text: "駅前のトイレ、臭すぎ", flameProbability: 0.14, category: "不満" },
+        { text: "政治家の不祥事、もう許せない！", flameProbability: 0.30, category: "政治" },
+        { text: "最近の若者は根性がない", flameProbability: 0.40, category: "世代間" },
+        { text: "今日の朝ごはんは納豆ご飯", flameProbability: 0.05, category: "日常" },
+        { text: "電車でマスクしてない人多すぎ。みんな非常識", flameProbability: 0.46, category: "マナー" },
+        { text: "ペットボトルのお茶、高すぎない？", flameProbability: 0.18, category: "不満" },
+        { text: "芸能人の不倫、別に個人の自由じゃない？", flameProbability: 0.37, category: "芸能" },
+        { text: "気候変動は嘘。科学者の陰謀だ", flameProbability: 0.59, category: "陰謀論" },
+        { text: "今日の夕焼けがきれい", flameProbability: 0.03, category: "日常" },
+        { text: "有名人の過去の失言を掘り起こして批判するの、やめるべき", flameProbability: 0.35, category: "SNS" },
+        { text: "給食費の無償化、本当に必要？", flameProbability: 0.43, category: "教育" },
+        { text: "スマホ依存症の人多すぎ。もっと現実を見よう", flameProbability: 0.27, category: "技術" },
+        { text: "電車で化粧する人、正直引く", flameProbability: 0.38, category: "マナー" },
+        { text: "今日のラーメン、美味しかった！", flameProbability: 0.05, category: "グルメ" },
+        { text: "外国人労働者の受け入れ、もっと規制すべき", flameProbability: 0.50, category: "政治" },
+        { text: "ジェンダーレス社会って、本当に必要？", flameProbability: 0.47, category: "ジェンダー" },
+        { text: "今日の富士山、綺麗だった", flameProbability: 0.04, category: "日常" },
+        { text: "子育ては女性の仕事。男は外で稼ぐべき", flameProbability: 0.56, category: "ジェンダー" },
+        { text: "電車の中で電話する人、迷惑だよね", flameProbability: 0.20, category: "マナー" },
+        { text: "高齢ドライバーの免許返納、もっと厳しくすべき", flameProbability: 0.41, category: "交通" },
+        { text: "今日の夕食はカレーライス！", flameProbability: 0.06, category: "グルメ" },
+        { text: "TPPは日本の農業を破壊する", flameProbability: 0.34, category: "経済" },
+        { text: "SNSの影響で、若者のコミュニケーション能力が低下している", flameProbability: 0.29, category: "SNS" },
+        { text: "今日の満月、本当に美しい", flameProbability: 0.02, category: "自然" },
+        { text: "死刑制度は必要。凶悪犯罪者に人権はない", flameProbability: 0.53, category: "法律" },
+        { text: "ワクチンは危険。自然免疫を信じるべき", flameProbability: 0.58, category: "健康" },
+        { text: "電車の優先席、若者が座りすぎ", flameProbability: 0.31, category: "マナー" },
+        { text: "今日の朝日、心が洗われる", flameProbability: 0.02, category: "自然" },
+        { text: "男女平等って、逆差別じゃない？", flameProbability: 0.54, category: "ジェンダー" },
+        { text: "コンビニの弁当、最近値上がりしすぎ", flameProbability: 0.21, category: "経済" },
+        { text: "宗教の自由は制限すべき。過激思想の温床になる", flameProbability: 0.56, category: "宗教" },
+        { text: "今日の星空、まるで天の川", flameProbability: 0.04, category: "自然" },
+        { text: "喫煙者の権利も守るべき。過度な規制はおかしい", flameProbability: 0.46, category: "健康" },
+        { text: "電車の遅延、もっと補償すべき", flameProbability: 0.24, category: "交通" },
+        { text: "今日の夕陽、海に沈む様子が魔法のよう", flameProbability: 0.03, category: "自然" },
+        { text: "移民政策は甘すぎる。もっと厳しくすべき", flameProbability: 0.52, category: "政治" },
+        { text: "スーパーのビニール袋、有料化は行き過ぎ", flameProbability: 0.34, category: "環境" },
+        { text: "今日の新緑、目に染みる美しさ", flameProbability: 0.02, category: "自然" },
+        { text: "SNSは若者の精神を蝕む。規制すべき", flameProbability: 0.49, category: "SNS" },
+        { text: "電車のマナー、昔の方が良かった", flameProbability: 0.25, category: "マナー" },
+        { text: "学校でのスマホ使用、完全に禁止すべき", flameProbability: 0.39, category: "教育" },
+        { text: "今日の桜、満開で綺麗", flameProbability: 0.05, category: "自然" },
+        { text: "選挙に行かない若者は国を良くする資格がない", flameProbability: 0.46, category: "政治" },
+        { text: "ベーシックインカム導入で貧困問題は解決する", flameProbability: 0.36, category: "経済" },
+        { text: "今日の雪景色、まるで絵画のよう", flameProbability: 0.03, category: "自然" },
+        { text: "外国人観光客のマナーが悪すぎる。規制すべき", flameProbability: 0.44, category: "観光" },
+        { text: "日本の教育システムは古すぎる。根本的な改革が必要", flameProbability: 0.26, category: "教育" },
+        { text: "今日の紅葉、息をのむほど美しい", flameProbability: 0.04, category: "自然" }
+    ];
+
+    const kusoReplies = {
+        "社会批判": [
+            "お前が社会を変えられると思ってんの？笑わせるな",
+            "そんなこと言って、自分は何をしてるんだ？",
+            "お前の意見なんて誰も聞いてないよ"
+        ],
+        "不満": [
+            "不満なら自分で何とかしろよ",
+            "そんなことでグチグチ言うなよ。めんどくせぇ",
+            "お前の人生、そんなに暇なの？"
+        ],
+        "政治": [
+            "お前に政治語る資格あんの？",
+            "そんなこと言って、選挙には行ってんの？",
+            "政治批判ばっかりして楽しいか？"
+        ],
+        "世代間": [
+            "老害乙",
+            "若者叩いて楽しいか？自分の若い頃を思い出せよ",
+            "時代遅れの考えは要らないから"
+        ],
+        "日常": [
+            "誰も興味ないぞ",
+            "で？",
+            "そんなどうでもいいこと呟くな"
+        ],
+        "マナー": [
+            "マナーマナーうるせぇんだよ",
+            "お前がマナー警察か？うざっ",
+            "人のこと気にしすぎ。自分の生活に集中しろよ"
+        ],
+        "芸能": [
+            "芸能ニュースにかまけてる暇あったら働けよ",
+            "他人の人生に首つっこむなよ",
+            "芸能人の話題で盛り上がる人生って寂しくない？"
+        ],
+        "陰謀論": [
+            "はいはい、また陰謀論者か",
+            "そんなデマを信じてる時点でお前の頭のレベルが分かるわ",
+            "陰謀論とか言ってる奴が一番社会の害悪だよな"
+        ],
+        "SNS": [
+            "SNSの話ばっかりして、リアルな友達いるの？",
+            "ネットの中だけで生きてんじゃねーよ",
+            "SNSに依存してる奴が何言ってんだか"
+        ],
+        "教育": [
+            "教育のこと語るなら、まず自分が勉強しろよ",
+            "お前みたいなのが教育を語るから日本の教育は終わるんだよ",
+            "子供のことなんて他人事みたいに語るなよ"
+        ],
+        "技術": [
+            "技術オンチが何言ってんだ",
+            "お前、スマホなしで生きていけるの？",
+            "テクノロジー批判してる割に、SNSには依存してそうだな"
+        ],
+        "グルメ": [
+            "飯の写真うpすんな、見てて不快だわ",
+            "そんなもの食って、舌大丈夫か？",
+            "食べログでもやってろよ"
+        ],
+        "ジェンダー": [
+            "ジェンダーのことなんて、お前に分かるわけないだろ",
+            "そんな古い考え方、恥ずかしくないの？",
+            "ジェンダー問題を語る前に、自分の偏見を見直せよ"
+        ],
+        "交通": [
+            "お前が運転するな。事故るぞ",
+            "交通ルールも守れないくせに偉そうなこと言うなよ",
+            "歩きスマホしながら文句言ってんじゃねーよ"
+        ],
+        "経済": [
+            "経済のこと語るなら、まず自分の財布の中身見直せよ",
+            "そんな薄っぺらい経済観で大丈夫か？",
+            "景気が悪いのはお前みたいなのが多いからだよ"
+        ],
+        "自然": [
+            "自然なんか見てないで働けよ",
+            "写真撮ってSNSにアップするのが目的だろ？",
+            "そんな暇があるなら環境保護でもしてろよ"
+        ],
+        "法律": [
+            "法律のこと語るなら、まず自分が守れよ",
+            "お前が裁判官にでもなったつもりか？",
+            "そんな単純な考えで法律語るなよ"
+        ],
+        "健康": [
+            "健康オタクは一番不健康だぞ",
+            "そんなに健康が大事なら、まずその言葉遣いをどうにかしろよ",
+            "健康のことばっか気にして、心の健康は大丈夫か？"
+        ],
+        "宗教": [
+            "宗教の自由も理解できないのか？頭大丈夫か？",
+            "お前こそ洗脳されてんじゃねーの？",
+            "宗教の話するなら、まず寛容な心を持てよ"
+        ],
+        "環境": [
+            "環境問題語るなら、まず自分のゴミ出し見直せよ",
+            "エコバッグ持ってるだけで偉いと思ってんじゃねーよ",
+            "環境のこと気にするなら、そのスマホやめろよ"
+        ],
+        "観光": [
+            "観光客がいなくなったら、お前の街なんて廃れるだけだぞ",
+            "外国人観光客に文句言う前に、自分の行動を見直せよ",
+            "観光客批判してる暇があったら、おもてなしの心でも学べよ"
+        ],
+        "その他": [
+            "お前の発言、意味不明",
+            "そんなくだらないこと呟いて恥ずかしくないの？",
+            "お前の脳みそ、大丈夫か？"
+        ]
+    };
+
     
     let followers = 100;
-    let highScore = 0;
+    let highScore = 100;
     let currentTweet;
-    let consecutiveAvoids = 0;
-    let isProcessing = false;
     
-    const followersElement = document.getElementById('followers');
+    const followerCountElement = document.getElementById('follower-count');
     const highScoreElement = document.getElementById('high-score');
     const tweetTextElement = document.getElementById('tweet-text');
     const flameProbabilityElement = document.getElementById('flame-probability');
@@ -178,109 +301,148 @@
     const resultElement = document.getElementById('result');
     const restartButton = document.getElementById('restart-button');
     const messageElement = document.getElementById('message');
-    
+    const kusoReplyElement = document.getElementById('kuso-reply');
+
     function updateFollowers() {
-        followersElement.textContent = followers.toLocaleString();
-        if (followers > highScore) {
-            highScore = followers;
-            highScoreElement.textContent = highScore.toLocaleString();
-        }
+    followerCountElement.textContent = followers.toLocaleString();
+    if (followers > highScore) {
+        highScore = followers;
+        highScoreElement.textContent = highScore.toLocaleString();
     }
-    
+}
+
     function getRandomTweet() {
-        return tweets[Math.floor(Math.random() * tweets.length)];
+        let newTweet;
+        do {
+            newTweet = tweets[Math.floor(Math.random() * tweets.length)];
+        } while (newTweet === currentTweet);
+        return newTweet;
     }
-    
+
     function showTweet(tweet) {
         currentTweet = tweet;
         tweetTextElement.textContent = tweet.text;
-        flameProbabilityElement.textContent = `${(tweet.flameProbability * 100).toFixed(0)}%`;
+        const flameProb = (tweet.flameProbability * 100).toFixed(0);
+        flameProbabilityElement.textContent = `${flameProb}%`;
+        kusoReplyElement.style.display = 'none';
     }
-    
-    function showMessage(text, duration = 2000) {
+
+    function showMessage(text) {
         messageElement.textContent = text;
         messageElement.style.display = 'block';
         setTimeout(() => {
             messageElement.style.display = 'none';
-        }, duration);
+        }, 2000);
     }
-    
-    function postTweet() {
-        if (isProcessing) return;
-        isProcessing = true;
-    
-        const randomValue = Math.random();
-        const flameChance = currentTweet.flameProbability;
-        
-        if (randomValue < flameChance) {
-            gameOver("炎上してしまいました！");
-        } else {
-            const baseGain = followers * 0.2;
-            const riskMultiplier = 1 + (currentTweet.flameProbability * 5);
-            const gain = Math.floor(baseGain * riskMultiplier);
-            
-            followers += gain;
-            updateFollowers();
-            showMessage(`+${gain.toLocaleString()} フォロワー`);
-            consecutiveAvoids = 0;
-            nextRound();
-        }
-    }
-    
-    function avoidTweet() {
-    if (isProcessing) return;
-    isProcessing = true;
 
-    consecutiveAvoids++;
-    
-    // ペナルティを指数関数的に増加させる
-    const baseLossRate = 0.15;
-    const penaltyMultiplier = Math.pow(1.5, consecutiveAvoids - 1);
-    const lossRate = Math.min(baseLossRate * penaltyMultiplier, 0.9); // 最大90%まで
-    
-    const loss = Math.floor(followers * lossRate);
-    followers -= loss;
-    
-    if (followers <= 0) {
-        gameOver("フォロワーがゼロになりました！");
-    } else {
+    function showKusoReply() {
+        const category = currentTweet.category || "その他";
+        const replies = kusoReplies[category] || kusoReplies["その他"];
+        const randomReply = replies[Math.floor(Math.random() * replies.length)];
+        kusoReplyElement.textContent = randomReply;
+        kusoReplyElement.style.display = 'block';
+    }
+
+    function gameOver(message) {
+        resultElement.textContent = message;
+        postButton.disabled = true;
+        avoidButton.disabled = true;
+        restartButton.style.display = 'block';
+    }
+
+    function nextRound() {
+        const tweet = getRandomTweet();
+        showTweet(tweet);
+    }
+
+    function restartGame() {
+        followers = 100;
         updateFollowers();
-        showMessage(`-${loss.toLocaleString()} フォロワー (${(lossRate * 100).toFixed(0)}%減)`);
+        resultElement.textContent = '';
+        kusoReplyElement.style.display = 'none';
+        postButton.disabled = false;
+        avoidButton.disabled = false;
+        restartButton.style.display = 'none';
+        nextRound()    }
+
+        function calculateFollowerGain(currentFollowers) {
+    // 基本増加率を5%とし、フォロワー数が増えるほど増加率も上がる
+    const baseRate = 0.25;
+    const accelerationFactor = 1 + (currentFollowers / 10000); // フォロワー数に応じて加速
+    return Math.floor(currentFollowers * baseRate * accelerationFactor);
+}
+
+function calculateFollowerLoss(currentFollowers) {
+    // 基本減少率を3%とし、フォロワー数に比例して減少
+    const baseRate = 0.3;
+    return Math.floor(currentFollowers * baseRate);
+}
+
+function postTweet() {
+    const randomValue = Math.random();
+    const flameChance = currentTweet.flameProbability;
+    
+    if (randomValue < flameChance) {
+        showKusoReply();
+        gameOver("炎上してしまいました！");
+    } else {
+        const gain = calculateFollowerGain(followers);
+        followers += gain;
+        updateFollowers();
+        showMessage(`+${gain.toLocaleString()} フォロワー`);
         nextRound();
     }
 }
+
+function avoidTweet() {
+    const loss = calculateFollowerLoss(followers);
+    followers -= loss;
     
-    function gameOver(message) {
-        resultElement.textContent = message;
-        postButton.style.display = 'none';
-        avoidButton.style.display = 'none';
-        restartButton.style.display = 'block';
-        isProcessing = false;
-    }
-    
-    function nextRound() {
-        resultElement.textContent = '';
-        const tweet = getRandomTweet();
-        showTweet(tweet);
-        isProcessing = false;
-    }
-    
-    function restartGame() {
-        followers = 100;
-        consecutiveAvoids = 0;
+    if (followers <= 0) {
+        followers = 0;
         updateFollowers();
-        resultElement.textContent = '';
-        postButton.style.display = 'inline-block';
-        avoidButton.style.display = 'inline-block';
-        restartButton.style.display = 'none';
+        gameOver("フォロワーがゼロになりました！");
+    } else {
+        updateFollowers();
+        showMessage(`-${loss.toLocaleString()} フォロワー`);
         nextRound();
     }
-    
-    postButton.addEventListener('click', postTweet);
-    avoidButton.addEventListener('click', avoidTweet);
-    restartButton.addEventListener('click', restartGame);
-    
+}
+
+function updateFollowers() {
+    followerCountElement.textContent = followers.toLocaleString();
+    if (followers > highScore) {
+        highScore = followers;
+        highScoreElement.textContent = highScore.toLocaleString();
+    }
+}
+
+function gameOver(message) {
+    resultElement.textContent = message;
+    postButton.disabled = true;
+    avoidButton.disabled = true;
+    restartButton.style.display = 'block';
+    kusoReplyElement.style.display = 'block'; // クソリプを表示
+}
+
+function restartGame() {
+    followers = 100;
+    updateFollowers();
+    resultElement.textContent = '';
+    kusoReplyElement.textContent = '';
+    kusoReplyElement.style.display = 'none';
+    postButton.disabled = false;
+    avoidButton.disabled = false;
+    restartButton.style.display = 'none';
     nextRound();
+}
+
+postButton.addEventListener('click', postTweet);
+avoidButton.addEventListener('click', avoidTweet);
+restartButton.addEventListener('click', restartGame);
+
+// ゲーム開始
+nextRound();
     </script>
 </body>
 </html>
